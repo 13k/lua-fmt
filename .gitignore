@@ -1,4 +1,10 @@
 /.envrc
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
 node_modules
 ide
 test_files/
