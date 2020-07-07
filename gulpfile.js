@@ -1,13 +1,9 @@
+// @ts-check
 const bump = require("gulp-bump");
 const gexeca = require("gulp-execa");
 const git = require("gulp-git");
-const gtslint = require("gulp-tslint");
 const gulp = require("gulp");
 const through2 = require("through2");
-
-const files = {
-  src: ["./src/**/*.ts", "./bin/**/*.ts"],
-};
 
 function tagVersion(file, _, cb) {
   if (file.basename !== "package.json") return cb(null, file);
@@ -26,15 +22,8 @@ function bumpVersion(type) {
     .pipe(through2.obj(tagVersion));
 }
 
-function tslint() {
-  return gulp
-    .src(files.src)
-    .pipe(
-      gtslint({
-        formatter: "verbose",
-      })
-    )
-    .pipe(tslint.report());
+function lint() {
+  return gexeca.exec("yarn run lint");
 }
 
 function compile() {
@@ -58,12 +47,12 @@ function major() {
 }
 
 const tasks = {
+  lint,
   compile,
   test,
   patch,
   minor,
   major,
-  tslint,
 };
 
 tasks.default = gulp.series(tasks.compile, tasks.test);
