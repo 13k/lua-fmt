@@ -9,6 +9,7 @@ node_js:
   - lts/*
 
 before_install:
+  - npm install -g yarn
   - pip install --user hererocks
   - mkdir lua-bins
   - hererocks lua53-env -l5.3 # Install Lua 5.3
@@ -16,6 +17,6 @@ before_install:
   - export PATH=$PATH:$PWD/lua-bins # Expose the binary path to the PATH
 
 script:
-  - npm install -g gulp
-  - gulp
-  - gulp test
+  - yarn install
+  - yarn run gulp
+  - yarn run gulp test
