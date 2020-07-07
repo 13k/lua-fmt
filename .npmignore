@@ -1,5 +1,7 @@
+.envrc
 .vscode/
 .vscodeignore
+.yarn/
 test/
 src/
 bin/
@@ -8,6 +10,7 @@ dist/testPrinter.*
 .gitattributes
 .gitignore
 gulpfile.js
+.pnp.*
 tsconfig.json
 tslint.json
 test_files/
