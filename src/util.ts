@@ -1,160 +1,177 @@
-import { Node } from 'luaparse';
+import { Node, Block } from "luaparse";
 
-export function locStart(node: Node) {
-    return node.range[0];
+export function locStart(node: Node): number {
+  return node.range[0];
 }
 
-export function locEnd(node: Node) {
-    return node.range[1];
+export function locEnd(node: Node): number {
+  return node.range[1];
 }
 
-export function isNode(value: any) {
-    if (!value || typeof (value.type) !== 'string') {
-        return false;
-    }
+export function isNode(value: any): value is Node {
+  if (value == null) return false;
 
-    switch (value.type) {
-        case 'LabelStatement':
-        case 'BreakStatement':
-        case 'GotoStatement':
-        case 'ReturnStatement':
-        case 'IfStatement':
-        case 'IfClause':
-        case 'ElseifClause':
-        case 'ElseClause':
-        case 'WhileStatement':
-        case 'DoStatement':
-        case 'RepeatStatement':
-        case 'LocalStatement':
-        case 'AssignmentStatement':
-        case 'CallStatement':
-        case 'FunctionDeclaration':
-        case 'ForNumericStatement':
-        case 'ForGenericStatement':
-        case 'Chunk':
-        case 'Identifier':
-        case 'BooleanLiteral':
-        case 'NilLiteral':
-        case 'NumericLiteral':
-        case 'StringLiteral':
-        case 'VarargLiteral':
-        case 'TableKey':
-        case 'TableKeyString':
-        case 'TableValue':
-        case 'TableConstructorExpression':
-        case 'BinaryExpression':
-        case 'LogicalExpression':
-        case 'UnaryExpression':
-        case 'MemberExpression':
-        case 'IndexExpression':
-        case 'CallExpression':
-        case 'TableCallExpression':
-        case 'StringCallExpression':
-        case 'Comment':
-            return true;
+  switch ((<Node>value).type) {
+    case "BinaryExpression":
+    case "BooleanLiteral":
+    case "CallExpression":
+    case "FunctionDeclaration":
+    case "Identifier":
+    case "IndexExpression":
+    case "LogicalExpression":
+    case "MemberExpression":
+    case "NilLiteral":
+    case "NumericLiteral":
+    case "StringCallExpression":
+    case "StringLiteral":
+    case "TableCallExpression":
+    case "TableConstructorExpression":
+    case "UnaryExpression":
+    case "VarargLiteral":
+    case "AssignmentStatement":
+    case "BreakStatement":
+    case "CallStatement":
+    case "DoStatement":
+    case "ElseClause":
+    case "ElseifClause":
+    case "ForGenericStatement":
+    case "ForNumericStatement":
+    case "GotoStatement":
+    case "IfClause":
+    case "IfStatement":
+    case "LabelStatement":
+    case "LocalStatement":
+    case "RepeatStatement":
+    case "ReturnStatement":
+    case "WhileStatement":
+    case "Chunk":
+    case "Comment":
+    case "TableKey":
+    case "TableKeyString":
+    case "TableValue":
+      return true;
+    default:
+      return false;
+  }
+}
 
-        default:
-            return false;
-    }
+export function isBlockNode(value: any): value is Block {
+  return isNode(value) && (<Block>value).body !== undefined;
 }
 
 export interface SearchOptions {
-    searchBackwards?: boolean;
+  searchBackwards?: boolean;
 }
 
-export function skipOnce(text: string, idx: number, sequences: string[], searchOptions: SearchOptions = {}) {
-    let skipCount = 0;
-    sequences.forEach(seq => {
-        const searchText = searchOptions.searchBackwards
-            ? text.substring(idx - seq.length, idx)
-            : text.substring(idx, idx + seq.length);
+export function skipOnce(
+  text: string,
+  index: number,
+  sequences: string[],
+  options: SearchOptions = {}
+): number {
+  let skipCount = 0;
 
-        if (searchText === seq) {
-            skipCount = seq.length;
-            return;
-        }
-    });
+  sequences.forEach((seq) => {
+    const searchText = options.searchBackwards
+      ? text.substring(index - seq.length, index)
+      : text.substring(index, index + seq.length);
 
-    return idx + (searchOptions.searchBackwards ? -skipCount : skipCount);
-}
-
-export function skipMany(text: string, idx: number, sequences: string[], searchOptions: SearchOptions = {}) {
-    let oldIdx = null;
-
-    while (oldIdx !== idx) {
-        oldIdx = idx;
-        idx = skipOnce(text, idx, sequences, searchOptions);
+    if (searchText === seq) {
+      skipCount = seq.length;
+      return;
     }
+  });
 
-    return idx;
+  return index + (options.searchBackwards ? -skipCount : skipCount);
 }
 
-export function skipNewLine(text: string, idx: number, searchOptions: SearchOptions = {}) {
-    return skipOnce(text, idx, ['\n', '\r\n'], searchOptions);
+export function skipMany(
+  text: string,
+  index: number,
+  sequences: string[],
+  options: SearchOptions = {}
+): number {
+  let oldIdx = null;
+
+  while (oldIdx !== index) {
+    oldIdx = index;
+    index = skipOnce(text, index, sequences, options);
+  }
+
+  return index;
 }
 
-export function skipSpaces(text: string, idx: number, searchOptions: SearchOptions = {}) {
-    return skipMany(text, idx, [' ', '\t'], searchOptions);
+export function skipNewLine(text: string, index: number, options: SearchOptions = {}): number {
+  return skipOnce(text, index, ["\n", "\r\n"], options);
 }
 
-export function skipToLineEnd(text: string, idx: number, searchOptions: SearchOptions = {}) {
-    return skipMany(text, skipSpaces(text, idx), [';'], searchOptions);
+export function skipSpaces(text: string, index: number, options: SearchOptions = {}): number {
+  return skipMany(text, index, [" ", "\t"], options);
 }
 
-export function hasNewLine(text: string, idx: number, searchOptions: SearchOptions = {}) {
-    const endOfLineIdx = skipSpaces(text, idx, searchOptions);
-    const nextLineIdx = skipNewLine(text, endOfLineIdx, searchOptions);
-
-    return endOfLineIdx !== nextLineIdx;
+export function skipToLineEnd(text: string, index: number, options: SearchOptions = {}): number {
+  return skipMany(text, skipSpaces(text, index), [";"], options);
 }
 
-export function hasNewLineInRange(text: string, start: number, end: number) {
-    return text.substr(start, end - start).indexOf('\n') !== -1;
+export function hasNewLine(text: string, index: number, options: SearchOptions = {}): boolean {
+  const endOfLineIdx = skipSpaces(text, index, options);
+  const nextLineIdx = skipNewLine(text, endOfLineIdx, options);
+
+  return endOfLineIdx !== nextLineIdx;
 }
 
-export function isPreviousLineEmpty(text: string, idx: number) {
-    idx = skipSpaces(text, idx, { searchBackwards: true });
-    idx = skipNewLine(text, idx, { searchBackwards: true });
-
-    idx = skipSpaces(text, idx, { searchBackwards: true });
-    const previousLine = skipNewLine(text, idx, { searchBackwards: true });
-
-    return idx !== previousLine;
+export function hasNewLineInRange(text: string, start: number, end: number): boolean {
+  return text.substr(start, end - start).indexOf("\n") !== -1;
 }
 
-export function skipTrailingComment(text: string, idx: number) {
-    if (text.charAt(idx) === '-' && text.charAt(idx + 1) === '-') {
-        idx += 2;
+export function isPreviousLineEmpty(text: string, index: number): boolean {
+  index = skipSpaces(text, index, { searchBackwards: true });
+  index = skipNewLine(text, index, { searchBackwards: true });
+  index = skipSpaces(text, index, { searchBackwards: true });
 
-        while (idx >= 0 && idx < text.length) {
-            if (text.charAt(idx) === '\n') {
-                return idx;
-            }
+  const previousLine = skipNewLine(text, index, { searchBackwards: true });
 
-            if (text.charAt(idx) === '\r' && text.charAt(idx + 1) === '\n') {
-                return idx;
-            }
+  return index !== previousLine;
+}
 
-            idx++;
-        }
+export function skipTrailingComment(text: string, index: number): number {
+  if (text.charAt(index) === "-" && text.charAt(index + 1) === "-") {
+    index += 2;
+
+    while (index >= 0 && index < text.length) {
+      if (text.charAt(index) === "\n") {
+        return index;
+      }
+
+      if (text.charAt(index) === "\r" && text.charAt(index + 1) === "\n") {
+        return index;
+      }
+
+      index++;
     }
+  }
 
-    return idx;
+  return index;
 }
 
-export function isNextLineEmpty(text: string, idx: number, searchOptions: SearchOptions = {
-    searchBackwards: false
-}) {
-    idx = skipToLineEnd(text, idx, searchOptions);
+export function isNextLineEmpty(
+  text: string,
+  index: number,
+  options: SearchOptions = {
+    searchBackwards: false,
+  }
+): boolean {
+  index = skipToLineEnd(text, index, options);
 
-    let oldIdx = null;
-    while (idx !== oldIdx) {
-        oldIdx = idx;
-        idx = skipSpaces(text, idx, searchOptions);
-    }
+  let oldIdx = null;
 
-    idx = skipTrailingComment(text, idx);
-    idx = skipNewLine(text, idx, searchOptions);
+  while (index !== oldIdx) {
+    oldIdx = index;
+    index = skipSpaces(text, index, options);
+  }
 
-    return hasNewLine(text, idx);
+  index = skipTrailingComment(text, index);
+  index = skipNewLine(text, index, options);
+
+  return hasNewLine(text, index);
 }
