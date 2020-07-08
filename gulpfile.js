@@ -1,4 +1,8 @@
-// @ts-check
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* @ts-check */
+
+"use strict";
+
 const bump = require("gulp-bump");
 const gexeca = require("gulp-execa");
 const git = require("gulp-git");
